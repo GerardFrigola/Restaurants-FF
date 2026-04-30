@@ -1,4 +1,4 @@
-﻿// Internationalisation: Catalan (default) and English
+// Internationalisation: Catalan (default) and English
 const STRINGS = {
   ca: {
     app_title: "Els nostres restaurants",
@@ -25,6 +25,8 @@ const STRINGS = {
     status: "Estat",
     address: "Adreça / cerca",
     search: "Cerca",
+    search_restaurant: "Cerca restaurant pel nom",
+    search_rest_placeholder: "Ex: Enjyu, He Cheng...",
     lat: "Latitud",
     lng: "Longitud",
     map_click_hint: "Pots clicar al mapa per fixar la ubicació.",
@@ -81,6 +83,8 @@ const STRINGS = {
     status: "Status",
     address: "Address / search",
     search: "Search",
+    search_restaurant: "Search restaurant by name",
+    search_rest_placeholder: "E.g. Enjyu, He Cheng...",
     lat: "Latitude",
     lng: "Longitude",
     map_click_hint: "You can click the map to set the location.",
