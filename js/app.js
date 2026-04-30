@@ -68,6 +68,16 @@ const latInput = $("#lat-input");
 const lngInput = $("#lng-input");
 
 // ---------- Login ----------
+function showApp() {
+  loginOverlay.classList.add("hidden");
+  appEl.classList.remove("hidden");
+  initApp();
+}
+function showLogin() {
+  loginOverlay.classList.remove("hidden");
+  appEl.classList.add("hidden");
+}
+
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   loginError.classList.add("hidden");
@@ -76,8 +86,11 @@ loginForm.addEventListener("submit", async (e) => {
     return;
   }
   try {
-    await signInAnonymously(auth);
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
     sessionStorage.setItem("authed", "1");
+    showApp();
   } catch (err) {
     console.error(err);
     alert("Error: " + err.message);
@@ -92,12 +105,9 @@ btnLogout.addEventListener("click", async () => {
 
 onAuthStateChanged(auth, (user) => {
   if (user && sessionStorage.getItem("authed") === "1") {
-    loginOverlay.classList.add("hidden");
-    appEl.classList.remove("hidden");
-    initApp();
+    showApp();
   } else {
-    loginOverlay.classList.remove("hidden");
-    appEl.classList.add("hidden");
+    showLogin();
   }
 });
 
