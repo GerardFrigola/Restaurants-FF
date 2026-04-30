@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ca">
 <head>
   <meta charset="UTF-8" />
@@ -99,12 +99,18 @@
 
         <div class="row">
           <label class="grow">
-            <span data-i18n="address">Adreça / cerca</span>
+            <span data-i18n="search_restaurant">Cerca restaurant pel nom</span>
             <div class="search-wrap">
-              <input type="text" name="address" id="addr-input" autocomplete="off" />
+              <input type="text" id="addr-input" autocomplete="off" placeholder="" data-i18n-placeholder="search_rest_placeholder" />
               <button type="button" id="addr-search" data-i18n="search">Cerca</button>
             </div>
             <ul id="addr-results" class="results hidden"></ul>
+          </label>
+        </div>
+        <div class="row">
+          <label class="grow">
+            <span data-i18n="address">Adreça</span>
+            <input type="text" name="address" id="address-field" autocomplete="off" />
           </label>
         </div>
 
