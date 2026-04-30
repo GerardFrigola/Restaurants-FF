@@ -1,0 +1,197 @@
+﻿<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Els nostres restaurants</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Login overlay -->
+  <div id="login-overlay" class="overlay">
+    <form id="login-form" class="card">
+      <h1 data-i18n="app_title">Els nostres restaurants</h1>
+      <p data-i18n="login_prompt">Introdueix la contrasenya compartida</p>
+      <input type="password" id="login-pass" autocomplete="current-password" required />
+      <button type="submit" data-i18n="enter">Entrar</button>
+      <p id="login-error" class="error hidden" data-i18n="wrong_pass">Contrasenya incorrecta</p>
+      <div class="lang-switch small">
+        <button type="button" data-lang="ca">CA</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">🍃</span>
+        <h1 data-i18n="app_title">Els nostres restaurants</h1>
+      </div>
+      <div class="actions">
+        <button id="btn-add" class="primary" data-i18n="add_restaurant">+ Afegir</button>
+        <button id="btn-locate" title="" data-i18n-title="locate_me">📍</button>
+        <button id="btn-list-toggle" data-i18n="view_list">Llista</button>
+        <button id="btn-export" data-i18n="export">Exportar</button>
+        <button id="btn-import" data-i18n="import">Importar</button>
+        <input type="file" id="import-file" accept="application/json" hidden />
+        <div class="lang-switch">
+          <button data-lang="ca">CA</button>
+          <button data-lang="en">EN</button>
+        </div>
+        <button id="btn-logout" title="" data-i18n-title="logout">⎋</button>
+      </div>
+    </header>
+
+    <aside id="filters" class="filters">
+      <input type="search" id="search" placeholder="" data-i18n-placeholder="search_placeholder" />
+      <label><input type="checkbox" id="f-visited" checked /> <span data-i18n="visited">Visitats</span></label>
+      <label><input type="checkbox" id="f-wishlist" checked /> <span data-i18n="wishlist">Per visitar</span></label>
+      <label><input type="checkbox" id="f-fav" /> <span data-i18n="only_fav">Només favorits</span></label>
+      <select id="f-price">
+        <option value="" data-i18n="any_price">Qualsevol preu</option>
+        <option value="€">€</option>
+        <option value="€€">€€</option>
+        <option value="€€€">€€€</option>
+        <option value="€€€€">€€€€</option>
+      </select>
+      <select id="f-tag">
+        <option value="" data-i18n="any_tag">Qualsevol etiqueta</option>
+      </select>
+      <select id="f-rating">
+        <option value="" data-i18n="any_rating">Valoració mínima</option>
+        <option value="1">★ 1+</option>
+        <option value="2">★ 2+</option>
+        <option value="3">★ 3+</option>
+        <option value="4">★ 4+</option>
+        <option value="5">★ 5</option>
+      </select>
+    </aside>
+
+    <main id="main">
+      <div id="map"></div>
+      <section id="list-view" class="hidden"></section>
+    </main>
+
+    <!-- Modal form -->
+    <div id="modal" class="overlay hidden">
+      <form id="rest-form" class="card large">
+        <header>
+          <h2 id="modal-title" data-i18n="new_restaurant">Nou restaurant</h2>
+          <button type="button" id="modal-close" class="icon">✕</button>
+        </header>
+
+        <div class="row">
+          <label>
+            <span data-i18n="name">Nom</span>
+            <input type="text" name="name" required />
+          </label>
+          <label>
+            <span data-i18n="status">Estat</span>
+            <select name="status" id="status-sel">
+              <option value="wishlist" data-i18n="wishlist">Per visitar</option>
+              <option value="visited" data-i18n="visited">Visitat</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="grow">
+            <span data-i18n="address">Adreça / cerca</span>
+            <div class="search-wrap">
+              <input type="text" name="address" id="addr-input" autocomplete="off" />
+              <button type="button" id="addr-search" data-i18n="search">Cerca</button>
+            </div>
+            <ul id="addr-results" class="results hidden"></ul>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>
+            <span data-i18n="lat">Latitud</span>
+            <input type="number" step="any" name="lat" id="lat-input" required />
+          </label>
+          <label>
+            <span data-i18n="lng">Longitud</span>
+            <input type="number" step="any" name="lng" id="lng-input" required />
+          </label>
+          <p class="hint" data-i18n="map_click_hint">Pots clicar al mapa per fixar la ubicació.</p>
+        </div>
+
+        <div class="row">
+          <label>
+            <span data-i18n="price">Preu</span>
+            <select name="price">
+              <option value="">—</option>
+              <option value="€">€</option>
+              <option value="€€">€€</option>
+              <option value="€€€">€€€</option>
+              <option value="€€€€">€€€€</option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="favorite">Favorit</span>
+            <input type="checkbox" name="favorite" />
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="grow">
+            <span data-i18n="tags">Etiquetes (tipus de cuina, etc.)</span>
+            <input type="text" name="tags" id="tags-input" placeholder="italià, pizza, romàntic" />
+            <div class="tag-suggestions" id="tag-suggestions"></div>
+          </label>
+        </div>
+
+        <fieldset id="visited-fields">
+          <legend data-i18n="visit_details">Detalls de la visita</legend>
+          <div class="row">
+            <label>
+              <span data-i18n="visit_date">Data de visita</span>
+              <input type="date" name="visitDate" />
+            </label>
+          </div>
+          <div class="row ratings">
+            <label>
+              <span data-i18n="rating_food">Menjar</span>
+              <input type="number" name="ratingFood" min="1" max="5" step="1" />
+            </label>
+            <label>
+              <span data-i18n="rating_ambience">Ambient</span>
+              <input type="number" name="ratingAmbience" min="1" max="5" step="1" />
+            </label>
+            <label>
+              <span data-i18n="rating_service">Servei</span>
+              <input type="number" name="ratingService" min="1" max="5" step="1" />
+            </label>
+          </div>
+          <label>
+            <span data-i18n="comment">Comentari</span>
+            <textarea name="comment" rows="3"></textarea>
+          </label>
+          <label>
+            <span data-i18n="photo">Foto</span>
+            <input type="file" name="photo" id="photo-input" accept="image/*" />
+            <img id="photo-preview" class="hidden" />
+          </label>
+        </fieldset>
+
+        <footer class="form-actions">
+          <button type="button" id="btn-delete" class="danger hidden" data-i18n="delete">Eliminar</button>
+          <button type="submit" class="primary" data-i18n="save">Desar</button>
+        </footer>
+      </form>
+    </div>
+
+    <!-- Detail popup uses Leaflet, but a side panel is also nice -->
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Firebase modular SDK via CDN -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/i18n.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
