@@ -459,11 +459,15 @@ function setFormLatLng(lat, lng) {
   setTimeout(() => { if (mapClickMarker) { mapClickMarker.remove(); mapClickMarker = null; } }, 4000);
 }
 
-// Geocoding (Nominatim)
+// Search restaurant by name (Photon API, bounded to Barcelona)
 addrSearch.addEventListener("click", () => doGeocode(addrInput.value));
 addrInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") { e.preventDefault(); doGeocode(addrInput.value); }
 });
+
+function inBcn(lat, lng) {
+  return lat >= 41.30 && lat <= 41.55 && lng >= 1.95 && lng <= 2.30;
+}
 
 async function doGeocode(query) {
   query = (query || "").trim();
@@ -471,22 +475,39 @@ async function doGeocode(query) {
   addrResults.innerHTML = `<li>...</li>`;
   addrResults.classList.remove("hidden");
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=0&q=${encodeURIComponent(query)}`;
-    const res = await fetch(url, { headers: { "Accept-Language": I18N.lang } });
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10&lat=41.39&lon=2.17&bbox=1.95,41.30,2.30,41.55&lang=default`;
+    const res = await fetch(url);
     const data = await res.json();
-    if (!data.length) {
+    let feats = (data.features || []).filter(f => {
+      const c = f.geometry && f.geometry.coordinates;
+      return c && inBcn(c[1], c[0]);
+    });
+    if (!feats.length) {
       addrResults.innerHTML = `<li>${I18N.t("no_geocode")}</li>`;
       return;
     }
-    addrResults.innerHTML = data.map(d =>
-      `<li data-lat="${d.lat}" data-lon="${d.lon}">${escapeHtml(d.display_name)}</li>`
-    ).join("");
-    addrResults.querySelectorAll("li[data-lat]").forEach(li => {
+    addrResults.innerHTML = feats.map((f, i) => {
+      const p = f.properties || {};
+      const name = p.name || "";
+      const addrParts = [p.street, p.housenumber, p.postcode, p.city].filter(Boolean).join(", ");
+      const label = name ? `<b>${escapeHtml(name)}</b>` : "";
+      const sub = addrParts ? `<small>${escapeHtml(addrParts)}</small>` : "";
+      return `<li data-idx="${i}">${label}${label && sub ? "<br>" : ""}${sub || escapeHtml(p.city || "")}</li>`;
+    }).join("");
+    addrResults.querySelectorAll("li[data-idx]").forEach(li => {
       li.addEventListener("click", () => {
-        setFormLatLng(parseFloat(li.dataset.lat), parseFloat(li.dataset.lon));
-        addrInput.value = li.textContent;
+        const f = feats[parseInt(li.dataset.idx)];
+        const c = f.geometry.coordinates; // [lng, lat]
+        const p = f.properties || {};
+        const name = p.name || "";
+        const addrParts = [p.street, p.housenumber, p.postcode, p.city].filter(Boolean).join(", ");
+        if (name && !form.elements.name.value) form.elements.name.value = name;
+        const addrEl = document.getElementById("address-field");
+        if (addrEl) addrEl.value = addrParts;
+        setFormLatLng(c[1], c[0]);
+        addrInput.value = name || query;
         addrResults.classList.add("hidden");
-        map.setView([parseFloat(li.dataset.lat), parseFloat(li.dataset.lon)], 16);
+        map.setView([c[1], c[0]], 17);
       });
     });
   } catch (err) {
